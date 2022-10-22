@@ -224,6 +224,7 @@ public class Move : Agent
     }
 }
 ```
+![Image alt](https://user-images.githubusercontent.com/101480666/196782073-fc0db72a-6eae-43ff-ad45-64c6a3515bd2.gif)
 ## Выводы
 
 
