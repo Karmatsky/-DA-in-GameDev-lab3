@@ -53,6 +53,77 @@ pip install mlagents
 pip install torch==1.7.1+cu110 --extra-index-url https://download.pytorch.org/whl/cu110
 ```
 
+![Image alt](https://raw.githubusercontent.com/Karmatsky/-DA-in-GameDev-lab3/main/content/Unity.png)
+
+Далее в консоли перехожу в папку с проектом. Создаю объекты плоскости, куба и сферы, выставляю настройки у компонентов, добавляю материалы
+
+![Image alt](https://raw.githubusercontent.com/Karmatsky/-DA-in-GameDev-lab3/main/content/Target%20Area.png)
+![Image alt](https://raw.githubusercontent.com/Karmatsky/-DA-in-GameDev-lab3/main/content/cube%26ball.png)
+
+В инспекторе добавялю в сферу RigidBody, а также C# скрипт
+
+```cs
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using Unity.MLAgents;
+using Unity.MLAgents.Sensors;
+using Unity.MLAgents.Actuators;
+
+public class RollerAgent : Agent
+{
+    Rigidbody rBody;
+    // Start is called before the first frame update
+    void Start()
+    {
+        rBody = GetComponent<Rigidbody>();
+    }
+
+    public Transform Target;
+    public override void OnEpisodeBegin()
+    {
+        if (this.transform.localPosition.y < 0)
+        {
+            this.rBody.angularVelocity = Vector3.zero;
+            this.rBody.velocity = Vector3.zero;
+            this.transform.localPosition = new Vector3(0, 0.5f, 0);
+        }
+
+        Target.localPosition = new Vector3(Random.value * 8 - 4, 0.5f, Random.value * 8 - 4);
+    }
+    public override void CollectObservations(VectorSensor sensor)
+    {
+        sensor.AddObservation(Target.localPosition);
+        sensor.AddObservation(this.transform.localPosition);
+        sensor.AddObservation(rBody.velocity.x);
+        sensor.AddObservation(rBody.velocity.z);
+    }
+    public float forceMultiplier = 10;
+    public override void OnActionReceived(ActionBuffers actionBuffers)
+    {
+        Vector3 controlSignal = Vector3.zero;
+        controlSignal.x = actionBuffers.ContinuousActions[0];
+        controlSignal.z = actionBuffers.ContinuousActions[1];
+        rBody.AddForce(controlSignal * forceMultiplier);
+
+        float distanceToTarget = Vector3.Distance(this.transform.localPosition, Target.localPosition);
+
+        if (distanceToTarget < 1.42f)
+        {
+            SetReward(1.0f);
+            EndEpisode();
+        }
+        else if (this.transform.localPosition.y < 0)
+        {
+            EndEpisode();
+        }
+    }
+}
+```
+Добавляю в корень проекта файл конфигурации нейронной сети, запускаю работу ML-агента. После прогона делаю 3, 9, 27 копий модели «Плоскость-Сфера-Куб», запускаю симуляцию сцены и наблюдаю за результатом обучения модели.
+
+![Image alt](https://raw.githubusercontent.com/Karmatsky/-DA-in-GameDev-lab3/main/content/9cubes%26balls.png)
+
 ## Задание 2 Подробно описать каждую строку файла конфигурации нейронной сети. Самостоятельно найти информацию о компонентах Decision Requester, Behavior Parameters, добавленных сфере
 
 Decision Requester - запрашивает решение через регулярные промежутки времени
